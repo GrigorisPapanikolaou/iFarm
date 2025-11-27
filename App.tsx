@@ -1,20 +1,51 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FieldsTab } from './components/FieldsTab';
 import { MachinesTab } from './components/MachinesTab';
 import { AnalysisTab } from './components/AnalysisTab';
 import { FieldWorksTab } from './components/FieldWorksTab';
 import { MachineRepairsTab } from './components/MachineRepairsTab';
 import { Field, Machine, FieldWork, MachineRepair, COMMON_MACHINE_TYPES } from './types';
-import { Sprout, Tractor, BarChart3, Menu, ClipboardList, Wrench } from 'lucide-react';
+import { Sprout, Tractor, BarChart3, Menu, ClipboardList, Wrench, Save } from 'lucide-react';
+
+// Custom hook for local storage persistence
+function useLocalStorage<T>(key: string, initialValue: T) {
+  // Get from local storage then parse stored json or return initialValue
+  const [storedValue, setStoredValue] = useState<T>(() => {
+    try {
+      if (typeof window === 'undefined') {
+        return initialValue;
+      }
+      const item = window.localStorage.getItem(key);
+      return item ? JSON.parse(item) : initialValue;
+    } catch (error) {
+      console.error(error);
+      return initialValue;
+    }
+  });
+
+  // Return a wrapped version of useState's setter function that ...
+  // ... persists the new value to localStorage.
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(key, JSON.stringify(storedValue));
+    } catch (error) {
+      console.error(error);
+    }
+  }, [key, storedValue]);
+
+  return [storedValue, setStoredValue] as const;
+}
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'fields' | 'machines' | 'works' | 'repairs' | 'analysis'>('fields');
-  const [fields, setFields] = useState<Field[]>([]);
-  const [machines, setMachines] = useState<Machine[]>([]);
-  const [works, setWorks] = useState<FieldWork[]>([]);
-  const [repairs, setRepairs] = useState<MachineRepair[]>([]);
-  const [machineTypes, setMachineTypes] = useState<string[]>(COMMON_MACHINE_TYPES);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Use persistent state instead of simple useState
+  const [fields, setFields] = useLocalStorage<Field[]>('farm_fields', []);
+  const [machines, setMachines] = useLocalStorage<Machine[]>('farm_machines', []);
+  const [works, setWorks] = useLocalStorage<FieldWork[]>('farm_works', []);
+  const [repairs, setRepairs] = useLocalStorage<MachineRepair[]>('farm_repairs', []);
+  const [machineTypes, setMachineTypes] = useLocalStorage<string[]>('farm_machine_types', COMMON_MACHINE_TYPES);
 
   const NavButton = ({ tab, icon: Icon, label }: { tab: typeof activeTab; icon: any; label: string }) => (
     <button
@@ -104,21 +135,27 @@ const App: React.FC = () => {
       {/* Main Content */}
       <main className="flex-1 md:ml-64 p-6 md:p-12 pt-20 md:pt-12 overflow-y-auto">
         <div className="max-w-5xl mx-auto">
-          <header className="mb-8">
-            <h2 className="text-3xl font-bold text-slate-800">
-              {activeTab === 'fields' && 'Field Management'}
-              {activeTab === 'works' && 'Field Operations Log'}
-              {activeTab === 'machines' && 'Equipment Fleet'}
-              {activeTab === 'repairs' && 'Maintenance & Repairs'}
-              {activeTab === 'analysis' && 'Farm Insights'}
-            </h2>
-            <p className="text-slate-500 mt-2">
-              {activeTab === 'fields' && 'Track your land and acreage.'}
-              {activeTab === 'works' && 'Log planting, spraying, and harvesting activities.'}
-              {activeTab === 'machines' && 'Manage your tractors, combines, and implements.'}
-              {activeTab === 'repairs' && 'Track equipment maintenance history and costs.'}
-              {activeTab === 'analysis' && 'Optimize your operation with AI-driven insights.'}
-            </p>
+          <header className="mb-8 flex justify-between items-start">
+            <div>
+              <h2 className="text-3xl font-bold text-slate-800">
+                {activeTab === 'fields' && 'Field Management'}
+                {activeTab === 'works' && 'Field Operations Log'}
+                {activeTab === 'machines' && 'Equipment Fleet'}
+                {activeTab === 'repairs' && 'Maintenance & Repairs'}
+                {activeTab === 'analysis' && 'Farm Insights'}
+              </h2>
+              <p className="text-slate-500 mt-2">
+                {activeTab === 'fields' && 'Track your land and acreage.'}
+                {activeTab === 'works' && 'Log planting, spraying, and harvesting activities.'}
+                {activeTab === 'machines' && 'Manage your tractors, combines, and implements.'}
+                {activeTab === 'repairs' && 'Track equipment maintenance history and costs.'}
+                {activeTab === 'analysis' && 'Optimize your operation with AI-driven insights.'}
+              </p>
+            </div>
+            <div className="hidden sm:flex items-center gap-2 text-xs text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full font-medium">
+              <Save className="w-3 h-3" />
+              Auto-save enabled
+            </div>
           </header>
 
           <div className="animate-in fade-in zoom-in-95 duration-300">
