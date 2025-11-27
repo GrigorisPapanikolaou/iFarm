@@ -1,0 +1,5 @@
+{
+  "name": "iFarm",
+  "description": "A modern farm management dashboard to track fields and machinery, featuring AI-powered fleet optimization and acreage analysis.",
+  "requestFramePermissions": []
+}
